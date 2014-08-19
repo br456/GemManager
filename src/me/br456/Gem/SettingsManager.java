@@ -31,15 +31,21 @@ public class SettingsManager {
    
     FileConfiguration data;
     File dfile;
+    
+    FileConfiguration lang;
+    File lfile;
+    
+    FileConfiguration uuids;
+    File ufile;
    
     public void setup(Plugin p) {
-            cfile = new File(p.getDataFolder(), "config.yml");
-            config = p.getConfig();
-           
-            if (!p.getDataFolder().exists()) {
-            		p.saveDefaultConfig();
-                    p.getDataFolder().mkdir();
-            }
+    	cfile = new File(p.getDataFolder(), "config.yml");
+        config = p.getConfig();
+       
+        if (!p.getDataFolder().exists()) {
+        		p.saveDefaultConfig();
+                p.getDataFolder().mkdir();
+        }
            
             dfile = new File(p.getDataFolder(), "data.yml");
            
@@ -52,6 +58,27 @@ public class SettingsManager {
                     }
             }
             
+            lfile = new File(p.getDataFolder(), "lang.yml");
+            if (!lfile.exists()) {
+            	 try {
+                     lfile.createNewFile();
+            	 }
+            	 catch (IOException e) {
+                     Bukkit.getServer().getLogger().severe(ChatColor.RED + "Could not create lang.yml!");
+            	 }
+            }
+            
+            ufile = new File(p.getDataFolder(), "uuids.yml");
+            
+            if (!ufile.exists()) {
+                    try {
+                            ufile.createNewFile();
+                    }
+                    catch (IOException e) {
+                            Bukkit.getServer().getLogger().severe(ChatColor.RED + "Could not create uuids.yml!");
+                    }
+            }
+            
             if (!cfile.exists()) {
                 try {
                         cfile.createNewFile();
@@ -59,9 +86,28 @@ public class SettingsManager {
                 catch (IOException e) {
                         Bukkit.getServer().getLogger().severe(ChatColor.RED + "Could not create config.yml!");
                 }
-        }
+            }
            
             data = YamlConfiguration.loadConfiguration(dfile);
+            lang = YamlConfiguration.loadConfiguration(lfile);
+            uuids = YamlConfiguration.loadConfiguration(ufile);
+            
+            lang.addDefault("tma", "Too many arguments!");
+            lang.addDefault("c", "Commands");
+            lang.addDefault("b", "Balance");
+            lang.addDefault("aap", "Must specify amount and player!");
+            lang.addDefault("cnf", "Could not find");
+            lang.addDefault("p", "Must specify a player!");
+            lang.addDefault("nvn", "is not a valid number!");
+            lang.addDefault("ming", "The minimum gems is 0!");
+            lang.addDefault("maxg", "The maximum gems is 1,000,000!");
+            lang.addDefault("nnn", "Can not subtract negative numbers!");
+            lang.addDefault("inf", "has insufficient funds");
+            lang.addDefault("e", "Emerald");
+            saveLang();
+            
+            lang.options().copyDefaults(true);
+            saveLang();
             config = YamlConfiguration.loadConfiguration(cfile);
     }
    
@@ -81,6 +127,42 @@ public class SettingsManager {
     public void reloadData() {
             data = YamlConfiguration.loadConfiguration(dfile);
     }
+    
+    public FileConfiguration getLang() {
+        return lang;
+    }
+
+    public void saveLang() {
+        try {
+                lang.save(lfile);
+        }
+        catch (IOException e) {
+                Bukkit.getServer().getLogger().severe(ChatColor.RED + "Could not save lang.yml!");
+        }
+    }
+
+    public void reloadLang() {
+        lang = YamlConfiguration.loadConfiguration(lfile);
+    }
+    
+    //UUID
+    public FileConfiguration getUUID() {
+        return uuids;
+    }
+
+    public void saveUUID() {
+        try {
+                uuids.save(ufile);
+        }
+        catch (IOException e) {
+                Bukkit.getServer().getLogger().severe(ChatColor.RED + "Could not save uuids.yml!");
+        }
+    }
+
+    public void reloadUUIDS() {
+        uuids = YamlConfiguration.loadConfiguration(ufile);
+    }
+    //END UUID
    
     public FileConfiguration getConfig() {
             return config;
@@ -104,7 +186,11 @@ public class SettingsManager {
     }
     
     public int getBalance(String name) {
-    	return data.getInt(name);
+    	if(Gem.isSQLEnabled() == true) {
+    		return Gem.getMySQL().getGems(getUUID(name));
+    	} else {
+        	return data.getInt(getUUID(name));
+    	}
     }
     
     public void addBalance(String name, double amnt) {
@@ -121,11 +207,35 @@ public class SettingsManager {
     }
     
     public void setBalance(String name, double d) {
-    	data.set(name, d);
-    	saveData();
-    	
-    	Player player = Bukkit.getServer().getPlayer(name);
-    	GemDisplay.updateScoreboard(player, d);
+    	if(d>1000000||d<0) return;
+    	Player player = Bukkit.getServer().getPlayerExact(name);
+    	if(Gem.isSQLEnabled() == true) {
+			Gem.getMySQL().setGems(getUUID(name), (int)Math.round(d));
+    		if(player == null) {
+    			return;
+    		}
+    		Bukkit.getServer().getPluginManager().callEvent(new BalanceChangeEvent(player));
+    		GemDisplay.updateScoreboard(player, d);		
+    	} else {
+    		data.set(getUUID(name), d);
+        	saveData();
+    		if(player == null) {
+    			return;
+    		}
+    		Bukkit.getServer().getPluginManager().callEvent(new BalanceChangeEvent(player));
+        	GemDisplay.updateScoreboard(player, d);
+    	}
     }
     
+    public boolean doesExist(String name) {
+    	if(Gem.isSQLEnabled() == true) {
+    		return Gem.getMySQL().exists(getUUID(name));
+    	} else {
+    		return data.contains(getUUID(name));
+    	}
+    }
+    
+    private String getUUID(String name) {
+    	return uuids.getString(name);
+    }
 }

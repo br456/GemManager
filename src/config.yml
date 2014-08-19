@@ -1,5 +1,16 @@
 Amount of gems per emerald: 1
 Auto-Update: true
+Gems on Death: true
+Scoreboard: true
+Custom Emerald: true
+
+MySQL:
+  Enabled: false
+  Host: 1.1.1.1
+  Port: 3306
+  Database: mydatabase
+  Username: admin
+  Password: password
 
 Mob Drops:
   Enabled: false
