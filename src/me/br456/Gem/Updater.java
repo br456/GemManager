@@ -20,7 +20,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-	//Credits to Gravity from Bukkit for creating this
+	//Credits to Gravity from Bukkit Forums for creating this
 
 public class Updater {
 
