@@ -40,7 +40,7 @@ public class Events implements Listener{
 		if(uuids.contains(name)) return;
 		//Get UUID
 		System.out.println("Getting UUID...");
-		String uuid = UUIDLibrary.getUUIDFromName(name);
+		String uuid = player.getUniqueId().toString();
 		System.out.println(uuid);
 		//Check if all is well
 		if(uuid==null) {
